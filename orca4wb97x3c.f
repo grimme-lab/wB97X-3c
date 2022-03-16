@@ -336,6 +336,9 @@ c*************************************************************************
           inquire(file=ecpfilename,exist=da2)
           if(da2)then
               open(unit=45,file=ecpfilename)
+          else
+              write(*,*) "~/.ecp file in $HOME is missing!"
+              error stop "I/O error stop."
           endif
       endif
  10   read(45,'(a)',end=20) atmp
