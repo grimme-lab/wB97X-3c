@@ -406,6 +406,9 @@ C     *****************************************************************
           inquire(file=basisfilename,exist=da2)
           if(da2)then
               open(unit=44,file=basisfilename)
+          else
+              write(*,*) "~/.basis_vDZP file in $HOME is missing!"
+              error stop "I/O error stop."
           endif
       endif
  10   read(44,'(a)',end=20) atmp
