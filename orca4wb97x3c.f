@@ -198,17 +198,31 @@ c method input
       write(7,'(a)')    "  D4S9    1.00"
       write(7,'(a,/)')  "end"
 
-      if (.not.indguess.and.zmax.eq.21.) then
-          indguess=.true.
-          guess='hcore'
-      endif
-      if(.not.indguess.and.zmax.gt.36.and.zmax.lt.55) then
-          indguess=.true.
-          guess='hueckel'
-      endif
-      if (.not.indguess.and.zmax.eq.74.) then
-          indguess=.true.
-          guess='hcore'
+      if(.not.indguess) then
+          do i=37,45
+              if (elem(i).ge.1) then
+                  indguess=.true.
+                  guess='hueckel'
+              endif
+          enddo
+          do i=48,54
+              if (elem(i).ge.1) then
+                  indguess=.true.
+                  guess='hueckel'
+              endif
+          enddo
+          if (elem(21).ge.1.) then
+              indguess=.true.
+              guess='hcore'
+          endif
+          if (elem(47).ge.1) then
+              indguess=.true.
+              guess='hcore'
+          endif
+          if (elem(74).ge.1) then
+              indguess=.true.
+              guess='hcore'
+          endif
       endif
       if(indguess)then
           write(7,'(''%scf'')')
