@@ -223,6 +223,14 @@ c method input
               indguess=.true.
               guess='hcore'
           endif
+          if (elem(82).ge.1) then
+              indguess=.true.
+              guess='hcore'
+          endif
+          if (elem(83).ge.1) then
+              indguess=.true.
+              guess='hcore'
+          endif
       endif
       if(indguess)then
           write(7,'(''%scf'')')
