@@ -186,7 +186,7 @@ c start writing
 
       if(mpi.gt.0) write(7,'(''%pal'',/,''nprocs'',i4,/,''end'',/)') mpi
       !if(mpi.gt.0) write(7,'(''%pal'',/,''nprocs '',i2,/,''end'',/)') mpi
-      write(7,'(''%MaxCore'',i6,/)') coremem
+      write(7,'(''%MaxCore '',i6,/)') coremem
 c method input
 !    .''! rks wb97x-d3 SDD Printbasis Largeprint nososcf slowconv'')') 
     
