@@ -29,7 +29,7 @@
      2 'fm','md','cb','xx','xx','xx','xx','xx'/
       logical da,polar,beta,dipgrad,polgrad,verbose,geoopt,nocosx
       logical tightscf,strongscf,indguess,help,uhfgiven,suborca
-      logical nouseshark,sauxbas
+      logical nouseshark,sauxbas, largeaux
 
       integer lao, nao, npr, carg,defgrid,coremem
       integer myunit
@@ -65,6 +65,7 @@
       indguess = .false. ! SCF conv criterium
       uhfgiven = .false. ! SCF conv criterium
       help = .false. ! SCF conv criterium
+      largeaux = .false.
 
       inquire(file='.UHF',exist=da)
       if(da)then
@@ -113,6 +114,7 @@
           if(index(atmp,'-nouseshark').ne.0) nouseshark=.true.
           if(index(atmp,'-smallauxbasis').ne.0) sauxbas=.true.
           if(index(atmp,'-help').ne.0) help=.true.
+          if(index(atmp,'-largeaux').ne.0) largeaux=.true.
       enddo
 
       if (help) then
@@ -165,11 +167,15 @@ c read coords
 
 c start writing
       open(unit=7,file=outn)
-      if (verbose) then
-          write(7,'(''! RKS WB97X-D4 def2/J PRINTBASIS LARGEPRINT'')')
+      if (largeaux) then
+          write(7,'(''! RKS WB97X-D4 def2/J def2-TZVP'')')
       else
-          write(7,'(''! RKS WB97X-D4 def2/J'')') 
+          write(7,'(''! RKS WB97X-D4 def2/J'')')
       endif
+      if (verbose) then
+          write(7,'(''! PRINTBASIS LARGEPRINT'')')
+      endif
+
       if (tightscf) then
           write(7,'(''! TightSCF'',2x,a,i1)') "DEFGRID", defgrid
       elseif (strongscf) then
