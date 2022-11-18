@@ -29,7 +29,7 @@
      2 'fm','md','cb','xx','xx','xx','xx','xx'/
       logical da,polar,beta,dipgrad,polgrad,verbose,geoopt,nocosx
       logical tightscf,strongscf,indguess,help,uhfgiven,suborca
-      logical nouseshark,sauxbas, largeaux
+      logical nouseshark,sauxbas, largeaux, ploteldens
 
       integer lao, nao, npr, carg,defgrid,coremem
       integer myunit
@@ -66,6 +66,7 @@
       uhfgiven = .false. ! SCF conv criterium
       help = .false. ! SCF conv criterium
       largeaux = .false.
+      ploteldens = .false.
 
       inquire(file='.UHF',exist=da)
       if(da)then
@@ -115,6 +116,7 @@
           if(index(atmp,'-smallauxbasis').ne.0) sauxbas=.true.
           if(index(atmp,'-help').ne.0) help=.true.
           if(index(atmp,'-largeaux').ne.0) largeaux=.true.
+          if(index(atmp,'-plot').ne.0) ploteldens=.true.
       enddo
 
       if (help) then
@@ -135,6 +137,8 @@
           write(*,*) "-nouseshark # (use different integral library)"
           write(*,*) "-smallauxbasis # (use auxbasis from 
      . ~/.auxbasis_vDZP instead of def2/J)"
+          write(*,*) "-plot # (Plot the electron density
+     . with the following settings)"
           stop
       endif
       if (suborca) outn='inp.inp'   ! output filename
@@ -306,7 +310,23 @@ c read file ~/.ecp and convert to ORCA style
          write(7,'(''  end'')')
          endif
       enddo
-      write(7,'(''end'')')
+      write(7,'(''end'',/)')
+
+      if (ploteldens) then
+          write(7,'(a)') "%plots"
+          write(7,'(a)') "  dim1 60"
+          write(7,'(a)') "  dim2 60"
+          write(7,'(a)') "  dim3 60"
+          write(7,'(a)') "  min1 -15"
+          write(7,'(a)') "  max1  15"
+          write(7,'(a)') "  min2 -15"
+          write(7,'(a)') "  max2  15"
+          write(7,'(a)') "  min3 -15"
+          write(7,'(a)') "  max3  15"
+          write(7,'(a)') "  Format Gaussian_Cube"
+          write(7,'(a)') '  Eldens("eldens.cube");'
+          write(7,'(a,/)') "end"
+      endif
 
       write(7,'(''* xyz'',2i4)')charge,nopen+1
       do i=1,nat
