@@ -10,3 +10,5 @@ auto-tests = true
 auto-examples = true
 [install]
 library = false
+[dependencies]
+mctc-lib.git = "https://github.com/grimme-lab/mctc-lib"
