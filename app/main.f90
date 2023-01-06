@@ -5,11 +5,10 @@ program main
    use miscellaneous, only: helpf
    implicit none
    integer              :: narg,i,myunit
-   integer              :: mpi,defgrid,charge,nopen
+   integer              :: mpi,defgrid,charge,nopen,chrg
+   integer             :: coremem
 
    character(len=80)    :: atmp,guess,filen,outn
-
-   real(wp)             :: coremem
 
    logical              :: indguess, polar, beta, polgrad, dipgrad, geoopt, nocosx
    logical              :: tightscf, strongscf, verbose, suborca, nouseshark, sauxbas
@@ -18,26 +17,27 @@ program main
    type(structure_type) :: mol
    type(error_type), allocatable   :: error
 
-   filen = 'coord' ! input  filename
-   outn  = 'wb97x3c.inp'   ! output filename
-   mpi   =  4      ! #procs
-   coremem   = 5000      ! #procs
-   polar = .false. ! polarizability calc
-   beta = .false. ! hyperpolarizabilities
-   polgrad = .false. ! polarizability derivatives
-   dipgrad = .false. ! dipole moment gradients
-   geoopt = .false. ! turn on !OPT keyword
-   nocosx = .false. ! turns on RIJCOSX, seminumerical exchange
-   verbose = .false. ! verbose output
-   nouseshark = .false. ! use different integral library
-   sauxbas = .false. ! use small auxbasis from ~/.auxbasis_vDZP
-   tightscf = .false. ! SCF conv criterium
-   strongscf = .false. ! SCF conv criterium
-   indguess = .false. ! SCF conv criterium
-   uhfgiven = .false. ! SCF conv criterium
-   help = .false. ! SCF conv criterium
-   largeaux = .false.
-   ploteldens = .false.
+   filen       = 'coord' ! input  filename
+   outn        = 'wb97x3c.inp'   ! output filename
+   mpi         =  4      ! # procs
+   coremem     = 5000      ! # memory per core in MB
+   defgrid     =  2      ! # ORCA grid
+   polar       = .false. ! polarizability calc
+   beta        = .false. ! hyperpolarizabilities
+   polgrad     = .false. ! polarizability derivatives
+   dipgrad     = .false. ! dipole moment gradients
+   geoopt      = .false. ! turn on !OPT keyword
+   nocosx      = .false. ! turns on RIJCOSX, seminumerical exchange
+   verbose     = .false. ! verbose output
+   nouseshark  = .false. ! use different integral library
+   sauxbas     = .false. ! use small auxbasis from ~/.auxbasis_vDZP
+   tightscf    = .false. ! SCF conv criterium
+   strongscf   = .false. ! SCF conv criterium
+   indguess    = .false. 
+   uhfgiven    = .false. 
+   help        = .false. 
+   largeaux    = .false.
+   ploteldens  = .false.
 
    ! get number of arguments
    narg = command_argument_count()
@@ -51,8 +51,7 @@ program main
       call get_command_argument(i,atmp)
       if(index(atmp,'-struc').ne.0) then
          call get_command_argument(i+1,atmp)
-         read(atmp,*) filen
-         filen=trim(filen)
+         filen = trim(atmp)
       endif
       if(index(atmp,'-memory').ne.0) then
          call get_command_argument(i+1,atmp)
@@ -93,7 +92,7 @@ program main
    inquire(file='.CHRG',exist=da)
    if(da)then
       open(newunit=myunit,file='.CHRG')
-      read(21,*) charge
+      read(myunit,*) charge
    endif
 
    if (help) then
@@ -101,6 +100,67 @@ program main
       stop
    endif
 
-   call rdfile(filen,mol)
+   call rdfile(filen,mol,chrg)
+   chrg = chrg - charge
+   if (.not. uhfgiven .and. (chrg .eq. 1 .or. (mod(chrg,2) .ne. 0))) then
+      write(*,'(a)') "Use a .UHF file or '--uhf <int>' to indicate the number of unpaired electrons."
+      call fatal_error(error, "Odd number of electrons for closed-shell calculation. ")
+      if (allocated(error)) then
+         print '(a)', error%message
+         error stop
+      end if
+   endif
+
+! start writing
+   open(newunit=myunit,file=outn)
+   if (largeaux) then
+      write(myunit,'(''! RKS WB97X-D4 def2/J def2-TZVP'')')
+   else
+      write(myunit,'(''! RKS WB97X-D4 def2/J'')')
+   endif
+   if (verbose) then
+      write(myunit,'(''! PRINTBASIS LARGEPRINT'')')
+   endif
+
+   if (tightscf) then
+      write(myunit,'(''! TightSCF'',2x,a,i1,/)') "DEFGRID", defgrid
+   elseif (strongscf) then
+      write(myunit,'(''! StrongSCF'',2x,a,i1,/)') "DEFGRID", defgrid
+   else
+      write(myunit,'(''! NormalSCF'',2x,a,i1,/)') "DEFGRID", defgrid
+   endif
+   if(geoopt) write(myunit,'(''! Opt'')')
+   if(nocosx) write(myunit,'(''! NOCOSX'')')
+   if(dipgrad) write(myunit,'(''! Freq'')')
+   if(polgrad) write(myunit,'(''! NumFreq'')')
+   if(nouseshark) write(myunit,'(''! NoUseShark'',/)')
+
+   if(mpi.gt.0) write(myunit,'(''%pal'',/,''  nprocs'',i4,/,''end'',/)') mpi
+   write(myunit,'(''%MaxCore '',i6,/)') coremem
+
+   write(myunit,'(a)')    "%method"
+   write(myunit,'(a)')    "  D4A1    0.2464"
+   write(myunit,'(a)')    "  D4A2    4.737"
+   write(myunit,'(a)')    "  D4S6    1.00"
+   write(myunit,'(a)')    "  D4S8    0.00"
+   write(myunit,'(a)')    "  D4S9    1.00"
+   write(myunit,'(a,/)')  "end"
+
+   if(.not.indguess) then
+      if (any((mol%num >= 37 .and. mol%num <= 45) .or. (mol%num >= 48 .and. mol%num <= 54))) then
+         indguess=.true.
+         guess='hueckel'
+      endif
+      if (any(mol%num == 21 .or. mol%num == 47 .or. mol%num == 74 .or. mol%num == 82 .or. mol%num == 83)) then
+         indguess=.true.
+         guess='hcore'
+      endif
+   endif
+
+   if(indguess)then
+      write(myunit,'(''%scf'')')
+      write(myunit,'(''  guess '',a20)') guess
+      write(myunit,'(''end'',/)')
+   endif
 
 end program main
