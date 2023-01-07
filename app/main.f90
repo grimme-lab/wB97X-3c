@@ -1,7 +1,9 @@
 program main
    use mctc_io
+   use mctc_io_convert, only : autoaa
    use mctc_env
-   use ioroutines, only: rdfile
+   use ioroutines, only: rdfile,rdbas
+   use basistype, only: basis_type
    use miscellaneous, only: helpf
    implicit none
    integer              :: narg,i,myunit
@@ -14,8 +16,9 @@ program main
    logical              :: tightscf, strongscf, verbose, suborca, nouseshark, sauxbas
    logical              :: largeaux, ploteldens, help, uhfgiven, da
 
-   type(structure_type) :: mol
-   type(error_type), allocatable   :: error
+   type(structure_type)             :: mol
+   type(error_type), allocatable    :: error
+   type(basis_type)                 :: bas
 
    filen       = 'coord' ! input  filename
    outn        = 'wb97x3c.inp'   ! output filename
@@ -33,9 +36,9 @@ program main
    sauxbas     = .false. ! use small auxbasis from ~/.auxbasis_vDZP
    tightscf    = .false. ! SCF conv criterium
    strongscf   = .false. ! SCF conv criterium
-   indguess    = .false. 
-   uhfgiven    = .false. 
-   help        = .false. 
+   indguess    = .false.
+   uhfgiven    = .false.
+   help        = .false.
    largeaux    = .false.
    ploteldens  = .false.
 
@@ -67,7 +70,7 @@ program main
          guess=trim(atmp)
       endif
       if(index(atmp,'-polar').ne.0) polar=.true.
-      if(index(atmp,'-hyppol').ne.0) beta=.true.
+      ! if(index(atmp,'-hyppol').ne.0) beta=.true.
       if(index(atmp,'-polgrad').ne.0) polgrad=.true.
       if(index(atmp,'-dipgrad').ne.0) dipgrad=.true.
       if(index(atmp,'-geoopt').ne.0) geoopt=.true.
@@ -157,10 +160,30 @@ program main
       endif
    endif
 
-   if(indguess)then
-      write(myunit,'(''%scf'')')
-      write(myunit,'(''  guess '',a20)') guess
-      write(myunit,'(''end'',/)')
+   if (indguess .or. beta) then
+      write(myunit, '(a)') "%scf"
+      if (indguess) write(myunit,'(''  guess '',a20)') guess
+      ! if (beta) write(myunit, '(2x,a)') "efield XXX,YYY,ZZZ"
+      write(myunit, '(a,/)') "end"
    endif
+
+   if(polar.or.polgrad.or.beta) write(myunit,'(''%elprop polar 1'',/,''end'',/)')
+   if (verbose) then
+      write(myunit,'(''%output'')')
+      write(myunit,'(''       print[P_Hirshfeld] 1'')')
+      write(myunit,'(''       print[P_BondOrder_M] 1'')')
+      write(myunit,'(''       print[P_basis] 2'')')
+      write(myunit,'(''end'')')
+   endif
+
+   call rdbas(bas,verbose)
+
+   write(myunit,'(a,2x,2i3)') "* xyz", charge, nopen+1
+   do i=1,mol%nat
+      write(myunit,'(a2,2x,3F22.14)') mol%sym(mol%id(i)),mol%xyz(:,i)*autoaa
+   enddo
+   write(myunit,'(a)') "*"
+
+   close(myunit)
 
 end program main
