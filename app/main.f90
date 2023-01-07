@@ -6,11 +6,12 @@ program main
    use basistype, only: basis_type
    use miscellaneous, only: helpf
    implicit none
-   integer              :: narg,i,myunit
+   integer              :: narg,i,myunit,j,k
    integer              :: mpi,defgrid,charge,nopen,chrg
    integer             :: coremem
 
    character(len=80)    :: atmp,guess,filen,outn
+   character(len=1)     :: ltmp
 
    logical              :: indguess, polar, beta, polgrad, dipgrad, geoopt, nocosx
    logical              :: tightscf, strongscf, verbose, suborca, nouseshark, sauxbas
@@ -177,6 +178,36 @@ program main
    endif
 
    call rdbas(bas,verbose)
+
+   write(myunit,'(a)') "%basis"
+   do i=1,maxval(mol%id,1)
+      if ( bas%exp(mol%num(i),1,1) > 0.0_wp ) then
+         write(myunit,'(2x,a,1x,a2)') "NewGTO",mol%sym(i)
+         do j=1,bas%nbf(mol%num(i))
+            if (bas%angmom(mol%num(i),j) == 0) ltmp = 'S'
+            if (bas%angmom(mol%num(i),j) == 1) ltmp = 'P'
+            if (bas%angmom(mol%num(i),j) == 2) ltmp = 'D'
+            if (bas%angmom(mol%num(i),j) == 3) ltmp = 'F'
+            if (bas%angmom(mol%num(i),j) == 4) ltmp = 'G'
+            if (bas%angmom(mol%num(i),j) == 5) ltmp = 'H'
+            if (bas%angmom(mol%num(i),j) == 6) ltmp = 'I'
+            write(myunit,'(3x,a1,2x,i3)') ltmp,bas%npr(mol%num(i),j)
+            do k=1,bas%npr(mol%num(i),j)
+               write(myunit,'(i3,2x,2f14.8)') k,bas%exp(mol%num(i),j,k),bas%coeff(mol%num(i),j,k)
+            enddo
+         enddo
+         write(myunit,'(2x,a)') "end"
+      else
+         call fatal_error(error,"No basis set for atoms with Z > 86")
+      endif
+   enddo
+   write(myunit,'(a)') "end"
+
+   if (allocated(error)) then
+      print '(a)', error%message
+      error stop
+   end if
+
 
    write(myunit,'(a,2x,2i3)') "* xyz", charge, nopen+1
    do i=1,mol%nat

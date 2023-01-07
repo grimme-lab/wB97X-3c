@@ -48,8 +48,6 @@ contains
       integer                                :: iat,tmpnpr,imax
       integer                                :: i,j,l,k
 
-      real(wp),allocatable                   :: tmpexp(:),tmpcoeff(:)
-
       allocate(nbf(100),npr(100,20),angmom(100,20))
 
       if (.not. present(basisfilename)) then
