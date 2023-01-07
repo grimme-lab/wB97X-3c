@@ -5,7 +5,7 @@ module ioroutines
    implicit none
    private
 
-   public :: rdfile,rdbas
+   public :: rdfile,rdbas,rdecp
 contains
    subroutine rdfile(filename,imol,nel)
 
@@ -166,7 +166,7 @@ contains
             if (angmom(i,j) == "h") ibasis%angmom(i,j) = 5
             if (angmom(i,j) == "i") ibasis%angmom(i,j) = 6
             if (angmom(i,j) == "j") error stop "too high primitives"
-         ibasis%npr(iat,:) = npr(iat,:)
+            ibasis%npr(iat,:) = npr(iat,:)
          enddo
       enddo
 
@@ -211,4 +211,209 @@ contains
       enddo
 
    end subroutine rdbas
+
+   subroutine rdecp(iecp,verb,ecpfilename)
+
+      type(basis_type),intent(out)           :: iecp
+      logical, intent(in), optional          :: verb
+      character(len=*), intent(in),optional  :: ecpfilename
+      type(error_type), allocatable          :: error
+
+      character(len=:), allocatable          :: fname,homedir
+      character(len=120)                     :: atmp,btmp,ctmp,dtmp,etmp,ftmp
+      character(len=1)                       :: ltmp
+
+      logical                                :: da,angfound
+
+      integer, allocatable                   :: nbf(:),npr(:,:),ncore(:),lmax(:)
+      integer, allocatable                   :: angmom(:,:)
+
+      integer                                :: myunit,char_length,ierr,iread
+      integer                                :: iat,tmpnpr,imax
+      integer                                :: i,j,l,k,m
+
+      allocate(nbf(118),npr(118,20),angmom(118,20),ncore(118),lmax(118))
+
+      if (.not. present(ecpfilename)) then
+         call get_environment_variable("HOME", length=char_length)
+         allocate(character(len=char_length) :: homedir)
+         CALL get_environment_variable("HOME", value=homedir, status=ierr)
+         select case (ierr)
+          case (0)
+            ! do nothing
+          case (1)
+            call fatal_error(error, "HOME environment variable is not set!")
+            if (allocated(error)) then
+               print '(a)', error%message
+               error stop "I/O error stop."
+            end if
+          case (2)
+            call fatal_error(error, "this compiler does not support environment variables")
+            if (allocated(error)) then
+               print '(a)', error%message
+               error stop "I/O error stop."
+            end if
+         end select
+         fname=trim(homedir)//'/.ecp'
+      else
+         fname=ecpfilename
+      end if
+
+      write(*,'(a,a)') "Used ECP set file: ",fname
+
+      inquire(file=fname,exist=da)
+      if(da)then
+         open(newunit=myunit,file=fname,action='read',status='old',iostat=ierr)
+      else
+         call fatal_error(error, "basis set file cannot be opened!")
+         if (allocated(error)) then
+            print '(a)', error%message
+            error stop "I/O error stop."
+         end if
+      endif
+      iread =  0
+      l     =  0
+      npr   =  0
+      nbf   =  0
+      imax  =  0
+      angmom=  0
+      outermost: do while (iread >= 0)
+         read(myunit,'(a)',iostat=iread) atmp
+         l = l + 1
+         if (iread < 0) then
+            exit
+         end if
+         if (iread > 0) then
+            write(*,*) "Current line number: ",l
+            error stop "I/O error in basis set read in. Pt. 1."
+         end if
+         if( (index(atmp,'*').ne.0) .or. (index(atmp,'#').ne.0) ) then
+            cycle
+         else
+            read(atmp,*,iostat=iread) iat
+            if (iread /= 0) then
+               write(*,*) "Current line number: ",l
+               error stop "I/O error in basis set read in. Pt. 2."
+            end if
+            nbf(iat) = 0
+            npr(iat,:) = 0
+
+            if (iat > imax) then
+               imax = iat
+            end if
+
+            read(myunit,*,iostat=iread) btmp, ctmp, ncore(iat), dtmp, etmp, lmax(iat)
+            l = l + 1
+            if (iread /= 0) then
+               write(*,*) "Current line number: ",l
+               error stop "I/O error in basis set read in. Pt. 3."
+            end if
+
+            angfound = .false.
+            outer: do while ( (index(atmp,'*').eq.0) .and. (index(atmp,'#').eq.0) )
+               read(myunit,'(a)',iostat=iread) atmp
+               l = l + 1
+               if (iread /= 0) then
+                  write(*,*) "Current line number: ",l
+                  error stop "I/O error in basis set read in. Pt. 4."
+               end if
+
+               if(index(atmp(1:1),'s').eq.1) then
+                  angmom(iat,k)=0
+                  angfound=.true.
+               else if(index(atmp(1:1),'p').eq.1) then
+                  angmom(iat,k)=1
+                  angfound=.true.
+               else if(index(atmp(1:1),'d').eq.1) then
+                  angmom(iat,k)=2
+                  angfound=.true.
+               else if(index(atmp(1:1),'f').eq.1) then
+                  angmom(iat,k)=3
+                  angfound=.true.
+               else if(index(atmp(1:1),'g').eq.1) then
+                  angmom(iat,k)=4
+                  angfound=.true.
+               else if(index(atmp(1:1),'h').eq.1) then
+                  angmom(iat,k)=5
+                  angfound=.true.
+               else if(index(atmp,'*').eq.1 .or. index(atmp,'#').eq.1) then
+                  exit
+               endif
+
+               if (angfound) then
+                  nbf(iat) = nbf(iat) + 1
+                  npr(iat,nbf(iat)) = 0
+                  angfound = .false.
+                  cycle
+               end if
+
+               npr(iat,nbf(iat)) = npr(iat,nbf(iat)) + 1
+
+            enddo outer
+            write(*,*) "iat, nbf(iat), npr(iat,nbf(iat))",iat,nbf(iat),npr(iat,nbf(iat))
+         endif
+      enddo outermost
+      stop
+
+      iecp%atmax = imax
+      allocate(iecp%npr(imax,20),iecp%angmom(imax,20),iecp%nbf(imax))
+      allocate(iecp%exp(imax,20,20),iecp%coeff(imax,20,20))
+      close(myunit)
+
+      iecp%npr = 0
+      iecp%nbf = 0
+      iecp%angmom = 0
+      iecp%exp = 0.0_wp
+      iecp%coeff = 0.0_wp
+
+      do i=1,iecp%atmax
+         iecp%nbf(i) = nbf(i)
+         do j=1,iecp%nbf(i)
+            iecp%npr(i,j) = npr(i,j)
+            iecp%angmom(i,j) = angmom(i,j)
+            iecp%npr(iat,:) = npr(iat,:)
+         enddo
+      enddo
+
+
+      open(newunit=myunit,file=fname,action='read',status='old',iostat=ierr)
+      iread =  0
+      l     =  0
+      if (verb) then
+         write(*,*) "Z, # basis function, # primitive, exponent, coefficient"
+      endif
+      do while (iread >= 0)
+         read(myunit,'(a)',iostat=iread) atmp
+         l = l + 1
+         if (iread < 0) then
+            write(*,'(a,1x,i3,/)') "End of file reached after reading basis set for element:", iat
+            exit
+         end if
+         if (iread > 0) then
+            write(*,*) "Current line number: ",l
+            error stop "I/O error in basis set read in."
+         end if
+         if( (index(atmp,'*').ne.0) .or. (index(atmp,'#').ne.0) ) then
+            cycle
+         else
+            read(atmp,*,iostat=iread) iat
+            if (iread /= 0) then
+               write(*,*) "Current line number: ",l
+               error stop "I/O error in basis set read in."
+            end if
+            do i=1,iecp%nbf(iat)
+               read(myunit,*,iostat=iread) atmp
+               l = l + 1
+               do j=1,iecp%npr(iat,i)
+                  read(myunit,*,iostat=iread) iecp%exp(iat,i,j),iecp%coeff(iat,i,j)
+                  if (verb) then
+                     write(*,*) iat, i, j, iecp%exp(iat,i,j),iecp%coeff(iat,i,j)
+                  end if
+                  l = l + 1
+               end do
+            enddo
+         endif
+      enddo
+
+   end subroutine rdecp
 end module ioroutines

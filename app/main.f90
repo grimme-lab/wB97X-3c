@@ -2,7 +2,7 @@ program main
    use mctc_io
    use mctc_io_convert, only : autoaa
    use mctc_env
-   use ioroutines, only: rdfile,rdbas
+   use ioroutines, only: rdfile,rdbas,rdecp
    use basistype, only: basis_type
    use miscellaneous, only: helpf
    implicit none
@@ -19,7 +19,7 @@ program main
 
    type(structure_type)             :: mol
    type(error_type), allocatable    :: error
-   type(basis_type)                 :: bas
+   type(basis_type)                 :: bas,ecp
 
    filen       = 'coord' ! input  filename
    outn        = 'wb97x3c.inp'   ! output filename
@@ -201,6 +201,9 @@ program main
          call fatal_error(error,"No basis set for atoms with Z > 86")
       endif
    enddo
+
+   call rdecp(ecp,verbose)
+
    write(myunit,'(a)') "end"
 
    if (allocated(error)) then
