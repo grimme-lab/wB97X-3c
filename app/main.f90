@@ -7,15 +7,19 @@ program main
    use miscellaneous, only: helpf
    implicit none
    integer              :: narg,i,myunit,j,k
-   integer              :: mpi,defgrid,charge,nopen,chrg
-   integer             :: coremem
+   integer              :: mpi      = 4
+   integer              :: defgrid  = 2
+   integer              :: charge   = 0
+   integer              :: nopen    = 0
+   integer              :: chrg     = 0
+   integer              :: coremem  = 5000
 
-   character(len=80)    :: atmp,guess,filen,outn
+   character(len=120)    :: atmp,guess,filen,outn,bfilen,efilen
    character(len=1)     :: ltmp
 
    logical              :: indguess, polar, beta, polgrad, dipgrad, geoopt, nocosx
-   logical              :: tightscf, strongscf, verbose, suborca, nouseshark
-   logical              :: ploteldens, help, uhfgiven, da
+   logical              :: tightscf, strongscf, verbose, suborca, nouseshark,sugg_guess
+   logical              :: ploteldens, help, uhfgiven, da,indbfile,indefile,indcharge
 
    type(structure_type)             :: mol
    type(error_type), allocatable    :: error
@@ -24,9 +28,6 @@ program main
 
    filen       = 'coord' ! input  filename
    outn        = 'wb97x3c.inp'   ! output filename
-   mpi         =  4      ! # procs
-   coremem     = 5000      ! # memory per core in MB
-   defgrid     =  2      ! # ORCA grid
    polar       = .false. ! polarizability calc
    beta        = .false. ! hyperpolarizabilities
    polgrad     = .false. ! polarizability derivatives
@@ -41,59 +42,90 @@ program main
    uhfgiven    = .false.
    help        = .false.
    ploteldens  = .false.
+   indbfile    = .false.
+   indefile    = .false.
+   indcharge   = .false.
+   sugg_guess  = .false.
 
    ! get number of arguments
    narg = command_argument_count()
 
    do i=1,narg
       call get_command_argument(i,atmp)
-      if(index(atmp,'-mpi').ne.0) then
+      if(index(atmp,'--mpi').ne.0) then
          call get_command_argument(i+1,atmp)
          read(atmp,*) mpi
       endif
       call get_command_argument(i,atmp)
-      if(index(atmp,'-struc').ne.0) then
+      if(index(atmp,'--struc').ne.0) then
          call get_command_argument(i+1,atmp)
          filen = trim(atmp)
       endif
-      if(index(atmp,'-memory').ne.0) then
+      if(index(atmp,'--basisfile').ne.0) then
+         call get_command_argument(i+1,atmp)
+         indbfile=.true.
+         bfilen = trim(atmp)
+      endif
+      if(index(atmp,'--ecpfile').ne.0) then
+         call get_command_argument(i+1,atmp)
+         indefile=.true.
+         efilen = trim(atmp)
+      endif
+      if(index(atmp,'--chrg').ne.0) then
+         call get_command_argument(i+1,atmp)
+         indcharge=.true.
+         read(atmp,*) charge
+      endif
+      if(index(atmp,'--uhf').ne.0) then
+         call get_command_argument(i+1,atmp)
+         uhfgiven=.true.
+         read(atmp,*) nopen
+      endif
+      if(index(atmp,'--memory').ne.0) then
          call get_command_argument(i+1,atmp)
          read(atmp,*) coremem
       endif
-      if(index(atmp,'-defgrid').ne.0) then
+      if(index(atmp,'--defgrid').ne.0) then
          call get_command_argument(i+1,atmp)
          read(atmp,*) defgrid
       endif
-      if(index(atmp,'-guess').ne.0) then
+      if(index(atmp,'--guess').ne.0) then
          indguess=.true.
          call get_command_argument(i+1,atmp)
          guess=trim(atmp)
       endif
-      if(index(atmp,'-polar').ne.0) polar=.true.
+      if(index(atmp,'--polar').ne.0) polar=.true.
       ! if(index(atmp,'-hyppol').ne.0) beta=.true.
-      if(index(atmp,'-polgrad').ne.0) polgrad=.true.
-      if(index(atmp,'-dipgrad').ne.0) dipgrad=.true.
-      if(index(atmp,'-geoopt').ne.0) geoopt=.true.
-      if(index(atmp,'-nocosx').ne.0) nocosx=.true.
-      if(index(atmp,'-tightscf').ne.0) tightscf=.true.
-      if(index(atmp,'-strongscf').ne.0) strongscf=.true.
-      if(index(atmp,'-v').ne.0) verbose=.true.
-      if(index(atmp,'-suborca').ne.0) suborca=.true.
-      if(index(atmp,'-nouseshark').ne.0) nouseshark=.true.
-      if(index(atmp,'-help').ne.0) help=.true.
-      if(index(atmp,'-plot').ne.0) ploteldens=.true.
+      if(index(atmp,'--polgrad').ne.0) polgrad=.true.
+      if(index(atmp,'--dipgrad').ne.0) dipgrad=.true.
+      if(index(atmp,'--geoopt').ne.0) geoopt=.true.
+      if(index(atmp,'--nocosx').ne.0) nocosx=.true.
+      if(index(atmp,'--tightscf').ne.0) tightscf=.true.
+      if(index(atmp,'--strongscf').ne.0) strongscf=.true.
+      if(index(atmp,'--v').ne.0) verbose=.true.
+      if(index(atmp,'--suborca').ne.0) suborca=.true.
+      if(index(atmp,'--nouseshark').ne.0) nouseshark=.true.
+      if(index(atmp,'--help').ne.0) help=.true.
+      if(index(atmp,'--plot').ne.0) ploteldens=.true.
+      if(index(atmp,'--suggestedguess').ne.0) sugg_guess=.true.
    enddo
-   inquire(file='.UHF',exist=da)
-   if(da)then
-      open(newunit=myunit,file='.UHF')
-      read(21,*) nopen
-      uhfgiven=.true.
+   if (.not. uhfgiven) then
+      inquire(file='.UHF',exist=da)
+      if(da)then
+         open(newunit=myunit,file='.UHF')
+         read(myunit,*) nopen
+         uhfgiven=.true.
+         close(myunit)
+      endif
    endif
 
-   inquire(file='.CHRG',exist=da)
-   if(da)then
-      open(newunit=myunit,file='.CHRG')
-      read(myunit,*) charge
+   if (.not. indcharge) then
+      inquire(file='.CHRG',exist=da)
+      if(da)then
+         open(newunit=myunit,file='.CHRG')
+         read(myunit,*) charge
+         close(myunit)
+      endif
    endif
 
    if (help) then
@@ -101,7 +133,7 @@ program main
       stop
    endif
 
-   call rdfile(filen,mol,chrg)
+   call rdfile(trim(filen),mol,chrg)
    chrg = chrg - charge
    if (.not. uhfgiven .and. (chrg .eq. 1 .or. (mod(chrg,2) .ne. 0))) then
       write(*,'(a)') "Use a .UHF file or '--uhf <int>' to indicate the number of unpaired electrons."
@@ -143,15 +175,18 @@ program main
    write(myunit,'(a)')    "  D4S9    1.00"
    write(myunit,'(a,/)')  "end"
 
+
    if(.not.indguess) then
-      if (any((mol%num >= 37 .and. mol%num <= 45) .or. (mol%num >= 48 .and. mol%num <= 54))) then
-         indguess=.true.
-         guess='hueckel'
-      endif
-      if (any(mol%num == 21 .or. mol%num == 47 .or. &
-         mol%num == 74 .or. mol%num == 82 .or. mol%num == 83)) then
-         indguess=.true.
-         guess='hcore'
+      if (sugg_guess) then
+         if (any((mol%num >= 37 .and. mol%num <= 45) .or. (mol%num >= 48 .and. mol%num <= 54))) then
+            indguess=.true.
+            guess='hueckel'
+         endif
+         if (any(mol%num == 21 .or. mol%num == 47 .or. &
+            mol%num == 74 .or. mol%num == 82 .or. mol%num == 83)) then
+            indguess=.true.
+            guess='hcore'
+         endif
       endif
    endif
 
@@ -171,7 +206,11 @@ program main
       write(myunit,'(''end'')')
    endif
 
-   call rdbas(bas,verbose)
+   if (indbfile) then
+      call rdbas(bas,verbose,trim(bfilen))
+   else
+      call rdbas(bas,verbose)
+   endif
 
    write(myunit,'(a)') "%basis"
    do i=1,maxval(mol%id,1)
@@ -196,7 +235,12 @@ program main
       endif
    enddo
 
-   call rdecp(ecp,verbose)
+   if (indefile) then
+      call rdecp(ecp,verbose,efilen)
+   else
+      call rdecp(ecp,verbose)
+   endif
+
    do i=1,maxval(mol%id,1)
       if ( sum(abs(ecp%exp(mol%num(i),:,:))) > 0.0_wp .and. mol%num(i) >= ecp%atmin ) then
          write(myunit,'(a,a2)') "  NewECP ", mol%sym(i)
@@ -262,5 +306,7 @@ program main
    write(myunit,'(a)') "*"
 
    close(myunit)
+
+   write(*,'(a,a)') "Successfully wrote input file: ",outn
 
 end program main

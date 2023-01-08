@@ -27,6 +27,7 @@ contains
          nel = nel + imol%num(imol%id(i))
       end do
 
+
    end subroutine rdfile
 
    subroutine rdbas(ibasis,verb,basisfilename)
