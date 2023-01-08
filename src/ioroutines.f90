@@ -257,7 +257,7 @@ contains
                error stop "I/O error stop."
             end if
          end select
-         fname=trim(homedir)//'/.ecp'
+         fname=trim(homedir)//'/.ecp_vDZP'
       else
          fname=ecpfilename
       end if
@@ -268,7 +268,7 @@ contains
       if(da)then
          open(newunit=myunit,file=fname,action='read',status='old',iostat=ierr)
       else
-         call fatal_error(error, "basis set file cannot be opened!")
+         call fatal_error(error, "ECP set file cannot be opened!")
          if (allocated(error)) then
             print '(a)', error%message
             error stop "I/O error stop."

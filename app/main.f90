@@ -14,7 +14,8 @@ program main
    integer              :: chrg     = 0
    integer              :: coremem  = 5000
 
-   character(len=120)    :: atmp,guess,filen,outn,bfilen,efilen
+   character(len=120)   :: atmp,guess,filen,outn,bfilen,efilen
+   character(len=:),allocatable :: scfconv
    character(len=1)     :: ltmp
 
    logical              :: indguess, polar, beta, polgrad, dipgrad, geoopt, nocosx
@@ -28,6 +29,7 @@ program main
 
    filen       = 'coord' ! input  filename
    outn        = 'wb97x3c.inp'   ! output filename
+   scfconv     = 'NormalSCF'
    polar       = .false. ! polarizability calc
    beta        = .false. ! hyperpolarizabilities
    polgrad     = .false. ! polarizability derivatives
@@ -100,8 +102,8 @@ program main
       if(index(atmp,'--dipgrad').ne.0) dipgrad=.true.
       if(index(atmp,'--geoopt').ne.0) geoopt=.true.
       if(index(atmp,'--nocosx').ne.0) nocosx=.true.
-      if(index(atmp,'--tightscf').ne.0) tightscf=.true.
-      if(index(atmp,'--strongscf').ne.0) strongscf=.true.
+      if(index(atmp,'--tightscf').ne.0)   scfconv='TightSCF'
+      if(index(atmp,'--strongscf').ne.0)  scfconv='StrongSCF'
       if(index(atmp,'--v').ne.0) verbose=.true.
       if(index(atmp,'--suborca').ne.0) suborca=.true.
       if(index(atmp,'--nouseshark').ne.0) nouseshark=.true.
@@ -150,14 +152,8 @@ program main
    if (verbose) then
       write(myunit,'(''! PRINTBASIS LARGEPRINT'')')
    endif
-
-   if (tightscf) then
-      write(myunit,'(''! TightSCF'',2x,a,i1,/)') "DEFGRID", defgrid
-   elseif (strongscf) then
-      write(myunit,'(''! StrongSCF'',2x,a,i1,/)') "DEFGRID", defgrid
-   else
-      write(myunit,'(''! NormalSCF'',2x,a,i1,/)') "DEFGRID", defgrid
-   endif
+   write(myunit,'(a,a)',advance='NO') "! ",scfconv
+   write(myunit,'(1x,a,i1,/)') "DEFGRID", defgrid
    if(geoopt) write(myunit,'(''! Opt'')')
    if(nocosx) write(myunit,'(''! NOCOSX'')')
    if(dipgrad) write(myunit,'(''! Freq'')')
@@ -273,7 +269,7 @@ program main
          enddo
          write(myunit,'(2x,a)') "end"
       else
-         write(*,*) "No ECP assigned for element ",mol%sym(i),"."
+         write(*,'(a,a,a,/)') "No ECP assigned for element ",trim(mol%sym(i)),"."
       endif
    enddo
    write(myunit,'(a,/)') "end"
