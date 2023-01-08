@@ -232,13 +232,28 @@ program main
          write(*,*) "No ECP assigned for element ",mol%sym(i),"."
       endif
    enddo
-   write(myunit,'(a)') "end"
+   write(myunit,'(a,/)') "end"
 
    if (allocated(error)) then
       print '(a)', error%message
       error stop
    end if
 
+   if (ploteldens) then
+      write(myunit,'(a)') "%plots"
+      write(myunit,'(a)') "  dim1 60"
+      write(myunit,'(a)') "  dim2 60"
+      write(myunit,'(a)') "  dim3 60"
+      write(myunit,'(a)') "  min1 -15"
+      write(myunit,'(a)') "  max1  15"
+      write(myunit,'(a)') "  min2 -15"
+      write(myunit,'(a)') "  max2  15"
+      write(myunit,'(a)') "  min3 -15"
+      write(myunit,'(a)') "  max3  15"
+      write(myunit,'(a)') "  Format Gaussian_Cube"
+      write(myunit,'(a)') '  Eldens("eldens.cube");'
+      write(myunit,'(a,/)') "end"
+   endif
 
    write(myunit,'(a,2x,2i3)') "* xyz", charge, nopen+1
    do i=1,mol%nat
