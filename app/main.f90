@@ -3,7 +3,7 @@ program main
    use mctc_io_convert, only : autoaa
    use mctc_env
    use ioroutines, only: rdfile,rdbas,rdecp
-   use basistype, only: basis_type
+   use basistype, only: basis_type,ecp_type
    use miscellaneous, only: helpf
    implicit none
    integer              :: narg,i,myunit,j,k
@@ -14,12 +14,13 @@ program main
    character(len=1)     :: ltmp
 
    logical              :: indguess, polar, beta, polgrad, dipgrad, geoopt, nocosx
-   logical              :: tightscf, strongscf, verbose, suborca, nouseshark, sauxbas
-   logical              :: largeaux, ploteldens, help, uhfgiven, da
+   logical              :: tightscf, strongscf, verbose, suborca, nouseshark
+   logical              :: ploteldens, help, uhfgiven, da
 
    type(structure_type)             :: mol
    type(error_type), allocatable    :: error
-   type(basis_type)                 :: bas,ecp
+   type(basis_type)                 :: bas
+   type(ecp_type)                   :: ecp
 
    filen       = 'coord' ! input  filename
    outn        = 'wb97x3c.inp'   ! output filename
@@ -34,13 +35,11 @@ program main
    nocosx      = .false. ! turns on RIJCOSX, seminumerical exchange
    verbose     = .false. ! verbose output
    nouseshark  = .false. ! use different integral library
-   sauxbas     = .false. ! use small auxbasis from ~/.auxbasis_vDZP
    tightscf    = .false. ! SCF conv criterium
    strongscf   = .false. ! SCF conv criterium
    indguess    = .false.
    uhfgiven    = .false.
    help        = .false.
-   largeaux    = .false.
    ploteldens  = .false.
 
    ! get number of arguments
@@ -81,9 +80,7 @@ program main
       if(index(atmp,'-v').ne.0) verbose=.true.
       if(index(atmp,'-suborca').ne.0) suborca=.true.
       if(index(atmp,'-nouseshark').ne.0) nouseshark=.true.
-      if(index(atmp,'-smallauxbasis').ne.0) sauxbas=.true.
       if(index(atmp,'-help').ne.0) help=.true.
-      if(index(atmp,'-largeaux').ne.0) largeaux=.true.
       if(index(atmp,'-plot').ne.0) ploteldens=.true.
    enddo
    inquire(file='.UHF',exist=da)
@@ -117,11 +114,7 @@ program main
 
 ! start writing
    open(newunit=myunit,file=outn)
-   if (largeaux) then
-      write(myunit,'(''! RKS WB97X-D4 def2/J def2-TZVP'')')
-   else
-      write(myunit,'(''! RKS WB97X-D4 def2/J'')')
-   endif
+   write(myunit,'(''! RKS WB97X-D4 def2/J'')')
    if (verbose) then
       write(myunit,'(''! PRINTBASIS LARGEPRINT'')')
    endif
@@ -155,7 +148,8 @@ program main
          indguess=.true.
          guess='hueckel'
       endif
-      if (any(mol%num == 21 .or. mol%num == 47 .or. mol%num == 74 .or. mol%num == 82 .or. mol%num == 83)) then
+      if (any(mol%num == 21 .or. mol%num == 47 .or. &
+         mol%num == 74 .or. mol%num == 82 .or. mol%num == 83)) then
          indguess=.true.
          guess='hcore'
       endif
@@ -193,7 +187,7 @@ program main
             if (bas%angmom(mol%num(i),j) == 6) ltmp = 'I'
             write(myunit,'(3x,a1,2x,i3)') ltmp,bas%npr(mol%num(i),j)
             do k=1,bas%npr(mol%num(i),j)
-               write(myunit,'(i3,2x,2f14.8)') k,bas%exp(mol%num(i),j,k),bas%coeff(mol%num(i),j,k)
+               write(myunit,'(i5,2x,2f14.8)') k,bas%exp(mol%num(i),j,k),bas%coeff(mol%num(i),j,k)
             enddo
          enddo
          write(myunit,'(2x,a)') "end"
@@ -203,7 +197,41 @@ program main
    enddo
 
    call rdecp(ecp,verbose)
-
+   do i=1,maxval(mol%id,1)
+      if ( sum(abs(ecp%exp(mol%num(i),:,:))) > 0.0_wp .and. mol%num(i) >= ecp%atmin ) then
+         write(myunit,'(a,a2)') "  NewECP ", mol%sym(i)
+         write(myunit,'(a,i2)') "  N_core ", ecp%ncore(mol%num(i))
+         if (ecp%lmax(mol%num(i)) == 0) ltmp = 's'
+         if (ecp%lmax(mol%num(i)) == 1) ltmp = 'p'
+         if (ecp%lmax(mol%num(i)) == 2) ltmp = 'd'
+         if (ecp%lmax(mol%num(i)) == 3) ltmp = 'f'
+         if (ecp%lmax(mol%num(i)) == 4) ltmp = 'g'
+         if (ecp%lmax(mol%num(i)) == 5) ltmp = 'h'
+         if (ecp%lmax(mol%num(i)) == 6) ltmp = 'i'
+         write(myunit,'(a,a2)') "  lmax ", ltmp
+         do j=1,ecp%nbf(mol%num(i))
+            if (verbose) then
+               write(*,*) "sortindex of element i and bf j: ",mol%num(i), j, ecp%sindex(mol%num(i),j)
+            endif
+            if (ecp%angmom(mol%num(i),j) == 0) ltmp = 's'
+            if (ecp%angmom(mol%num(i),j) == 1) ltmp = 'p'
+            if (ecp%angmom(mol%num(i),j) == 2) ltmp = 'd'
+            if (ecp%angmom(mol%num(i),j) == 3) ltmp = 'f'
+            if (ecp%angmom(mol%num(i),j) == 4) ltmp = 'g'
+            if (ecp%angmom(mol%num(i),j) == 5) ltmp = 'h'
+            if (ecp%angmom(mol%num(i),j) == 6) ltmp = 'i'
+            write(myunit,'(3x,a1,2x,i3)') ltmp, ecp%npr(mol%num(i),ecp%sindex(mol%num(i),j))
+            do k=1,ecp%npr(mol%num(i),ecp%sindex(mol%num(i),j))
+               write(myunit,'(i5,2x,2f14.8,2x,i3)') k, ecp%exp(mol%num(i),ecp%sindex(mol%num(i),j),k), &
+                  ecp%coeff(mol%num(i),ecp%sindex(mol%num(i),j),k), &
+                  ecp%nfactor(mol%num(i),ecp%sindex(mol%num(i),j),k)
+            enddo
+         enddo
+         write(myunit,'(2x,a)') "end"
+      else
+         write(*,*) "No ECP assigned for element ",mol%sym(i),"."
+      endif
+   enddo
    write(myunit,'(a)') "end"
 
    if (allocated(error)) then

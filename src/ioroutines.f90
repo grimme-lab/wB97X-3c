@@ -1,7 +1,8 @@
 module ioroutines
    use mctc_io
    use mctc_env
-   use basistype, only: basis_type
+   use stdlib_sorting
+   use basistype, only: basis_type,ecp_type
    implicit none
    private
 
@@ -214,14 +215,13 @@ contains
 
    subroutine rdecp(iecp,verb,ecpfilename)
 
-      type(basis_type),intent(out)           :: iecp
+      type(ecp_type),intent(out)           :: iecp
       logical, intent(in), optional          :: verb
       character(len=*), intent(in),optional  :: ecpfilename
       type(error_type), allocatable          :: error
 
       character(len=:), allocatable          :: fname,homedir
-      character(len=120)                     :: atmp,btmp,ctmp,dtmp,etmp,ftmp
-      character(len=1)                       :: ltmp
+      character(len=120)                     :: atmp,btmp,ctmp,dtmp,etmp
 
       logical                                :: da,angfound
 
@@ -229,8 +229,10 @@ contains
       integer, allocatable                   :: angmom(:,:)
 
       integer                                :: myunit,char_length,ierr,iread
-      integer                                :: iat,tmpnpr,imax
-      integer                                :: i,j,l,k,m
+      integer                                :: iat,imax,ltmp
+      integer                                :: i,j,l,imin
+
+      integer(int_size), allocatable        :: sortindex(:)
 
       allocate(nbf(118),npr(118,20),angmom(118,20),ncore(118),lmax(118))
 
@@ -277,7 +279,8 @@ contains
       nbf   =  0
       imax  =  0
       angmom=  0
-      outermost: do while (iread >= 0)
+      imin  = 118
+      do while (iread >= 0)
          read(myunit,'(a)',iostat=iread) atmp
          l = l + 1
          if (iread < 0) then
@@ -302,6 +305,10 @@ contains
                imax = iat
             end if
 
+            if (iat < imin) then
+               imin = iat
+            end if
+
             read(myunit,*,iostat=iread) btmp, ctmp, ncore(iat), dtmp, etmp, lmax(iat)
             l = l + 1
             if (iread /= 0) then
@@ -310,7 +317,7 @@ contains
             end if
 
             angfound = .false.
-            outer: do while ( (index(atmp,'*').eq.0) .and. (index(atmp,'#').eq.0) )
+            do while ( (index(atmp,'*').eq.0) .and. (index(atmp,'#').eq.0) )
                read(myunit,'(a)',iostat=iread) atmp
                l = l + 1
                if (iread /= 0) then
@@ -319,22 +326,22 @@ contains
                end if
 
                if(index(atmp(1:1),'s').eq.1) then
-                  angmom(iat,k)=0
+                  ltmp=0
                   angfound=.true.
                else if(index(atmp(1:1),'p').eq.1) then
-                  angmom(iat,k)=1
+                  ltmp=1
                   angfound=.true.
                else if(index(atmp(1:1),'d').eq.1) then
-                  angmom(iat,k)=2
+                  ltmp=2
                   angfound=.true.
                else if(index(atmp(1:1),'f').eq.1) then
-                  angmom(iat,k)=3
+                  ltmp=3
                   angfound=.true.
                else if(index(atmp(1:1),'g').eq.1) then
-                  angmom(iat,k)=4
+                  ltmp=4
                   angfound=.true.
                else if(index(atmp(1:1),'h').eq.1) then
-                  angmom(iat,k)=5
+                  ltmp=5
                   angfound=.true.
                else if(index(atmp,'*').eq.1 .or. index(atmp,'#').eq.1) then
                   exit
@@ -342,6 +349,7 @@ contains
 
                if (angfound) then
                   nbf(iat) = nbf(iat) + 1
+                  angmom(iat,nbf(iat)) = ltmp
                   npr(iat,nbf(iat)) = 0
                   angfound = .false.
                   cycle
@@ -349,15 +357,14 @@ contains
 
                npr(iat,nbf(iat)) = npr(iat,nbf(iat)) + 1
 
-            enddo outer
-            write(*,*) "iat, nbf(iat), npr(iat,nbf(iat))",iat,nbf(iat),npr(iat,nbf(iat))
+            enddo
          endif
-      enddo outermost
-      stop
+      enddo
 
       iecp%atmax = imax
-      allocate(iecp%npr(imax,20),iecp%angmom(imax,20),iecp%nbf(imax))
-      allocate(iecp%exp(imax,20,20),iecp%coeff(imax,20,20))
+      allocate(iecp%npr(imax,20),iecp%angmom(imax,20),iecp%nbf(imax),iecp%ncore(imax),iecp%lmax(imax))
+      allocate(iecp%exp(imax,20,20),iecp%coeff(imax,20,20),iecp%nfactor(imax,20,20))
+      allocate(iecp%sindex(imax,20))
       close(myunit)
 
       iecp%npr = 0
@@ -365,6 +372,9 @@ contains
       iecp%angmom = 0
       iecp%exp = 0.0_wp
       iecp%coeff = 0.0_wp
+      iecp%ncore = 0
+      iecp%lmax = 0
+      iecp%sindex = 0
 
       do i=1,iecp%atmax
          iecp%nbf(i) = nbf(i)
@@ -372,21 +382,26 @@ contains
             iecp%npr(i,j) = npr(i,j)
             iecp%angmom(i,j) = angmom(i,j)
             iecp%npr(iat,:) = npr(iat,:)
+            iecp%ncore(i) = ncore(i)
+            iecp%lmax(i) = lmax(i)
          enddo
       enddo
+      iecp%atmin = imin
 
-
+      if (verb) then
+         write(*,*) "Z, # basis function, # primitive, exponent, coefficient"
+      endif
       open(newunit=myunit,file=fname,action='read',status='old',iostat=ierr)
       iread =  0
       l     =  0
       if (verb) then
-         write(*,*) "Z, # basis function, # primitive, exponent, coefficient"
+         write(*,*) "Z, # basis function, # primitive, exponent, coefficient, nfactor, lmax, ncore"
       endif
       do while (iread >= 0)
          read(myunit,'(a)',iostat=iread) atmp
          l = l + 1
          if (iread < 0) then
-            write(*,'(a,1x,i3,/)') "End of file reached after reading basis set for element:", iat
+            write(*,'(a,1x,i3,/)') "End of file reached after reading ECP set for element:", iat
             exit
          end if
          if (iread > 0) then
@@ -397,23 +412,49 @@ contains
             cycle
          else
             read(atmp,*,iostat=iread) iat
+            read(myunit,*,iostat=iread) btmp
+            l = l + 1
             if (iread /= 0) then
                write(*,*) "Current line number: ",l
                error stop "I/O error in basis set read in."
             end if
             do i=1,iecp%nbf(iat)
-               read(myunit,*,iostat=iread) atmp
+               read(myunit,*,iostat=iread) btmp
                l = l + 1
+               if (iread /= 0) then
+                  write(*,*) "Current line number: ",l
+                  error stop "I/O error in basis set read in."
+               end if
                do j=1,iecp%npr(iat,i)
-                  read(myunit,*,iostat=iread) iecp%exp(iat,i,j),iecp%coeff(iat,i,j)
-                  if (verb) then
-                     write(*,*) iat, i, j, iecp%exp(iat,i,j),iecp%coeff(iat,i,j)
-                  end if
+                  read(myunit,*,iostat=iread) iecp%coeff(iat,i,j), iecp%nfactor(iat,i,j), iecp%exp(iat,i,j)
                   l = l + 1
+                  if (iread /= 0) then
+                     write(*,*) "Current line number: ",l
+                     error stop "I/O error in basis set read in."
+                  end if
+                  if (verb) then
+                     write(*,*) iat, i, j, iecp%exp(iat,i,j),iecp%coeff(iat,i,j),iecp%nfactor(iat,i,j), &
+                        iecp%lmax(iat),iecp%ncore(iat)
+                  end if
                end do
             enddo
          endif
       enddo
+
+      do i=iecp%atmin,iecp%atmax
+         allocate(sortindex(iecp%nbf(i)))
+         call sort_index(iecp%angmom(i,1:iecp%nbf(i)),sortindex(1:iecp%nbf(i)))
+         if (verb) then
+            write(*,*) "Sorted basis functions for element ",i
+            do j=1,iecp%nbf(i)
+               write(*,*) iecp%angmom(i,j), iecp%npr(i,sortindex(j))
+            enddo
+         endif
+         iecp%sindex(i,1:iecp%nbf(i)) = sortindex(1:iecp%nbf(i))
+         deallocate(sortindex)
+      enddo
+
+      close(myunit)
 
    end subroutine rdecp
 end module ioroutines
