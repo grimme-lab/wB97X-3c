@@ -16,7 +16,7 @@ More information about FPM can be found in the respective documentation.
 To set up an input file for ωB97X-3c, you have to execute the binary in a directory with a molecular structure file (can be either .xyz, coord, or common formats (see `mctc-lib` (https://github.com/grimme-lab/mctc-lib) for possible formats).
 
 You need the files:
-- `.basis_vDZP` and `.ecp_vDZP` in your `$HOME` (ATTENTION: the file names of the basis set and ECP files do not yet contain the (`.`) or you specify an individual location of the files (see example below or press `--help`).
+- `.basis_vDZP` and `.ecp_vDZP` in your `$HOME` (ATTENTION: the file names of the basis set and ECP files do not yet contain the `.`) or you specify an individual location of the files (see example below or press `--help`).
 
 Example use cases:
 
