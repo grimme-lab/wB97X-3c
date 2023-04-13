@@ -1,5 +1,5 @@
 # ORCA4wB97X-3c
-This is a Fortran script for setting up a ωB97X-3c calculation with ORCA5.0.3.
+This is a Fortran script for setting up a ωB97X-3c calculation with ORCA5.0.3 or higher.
 
 ### Release version (recommended)
 The use of the release binary [`o4wb3c`] is recommended. The binary has to be added to a location belonging to your `$PATH` variable.
