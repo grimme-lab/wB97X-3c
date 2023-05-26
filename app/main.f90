@@ -21,6 +21,7 @@ program main
    logical              :: indguess, polar, beta, polgrad, dipgrad, geoopt, nocosx
    logical              :: tightscf, strongscf, verbose, suborca, nouseshark,sugg_guess
    logical              :: ploteldens, help, uhfgiven, da,indbfile,indefile,indcharge
+   logical              :: hirshfeld
 
    type(structure_type)             :: mol
    type(error_type), allocatable    :: error
@@ -48,6 +49,7 @@ program main
    indefile    = .false.
    indcharge   = .false.
    sugg_guess  = .false.
+   hirshfeld   = .false.
 
    ! get number of arguments
    narg = command_argument_count()
@@ -96,6 +98,7 @@ program main
          call get_command_argument(i+1,atmp)
          guess=trim(atmp)
       endif
+      if(index(atmp,'--hirshfeld').ne.0) hirshfeld=.true.
       if(index(atmp,'--polar').ne.0) polar=.true.
       ! if(index(atmp,'-hyppol').ne.0) beta=.true.
       if(index(atmp,'--polgrad').ne.0) polgrad=.true.
@@ -200,6 +203,12 @@ program main
       write(myunit,'(''       print[P_BondOrder_M] 1'')')
       write(myunit,'(''       print[P_basis] 2'')')
       write(myunit,'(''end'')')
+   endif
+
+   if (hirshfeld) then
+      write(myunit,'(a)') "%output"
+      write(myunit,'(a)') "   print[P_Hirshfeld] 1"
+      write(myunit,'(a,/)') "end"
    endif
 
    if (indbfile) then
