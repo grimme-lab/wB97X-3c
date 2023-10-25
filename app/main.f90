@@ -54,7 +54,7 @@ program main
    prversion = .false.
    hirshfeld = .false.
    !##### VERSION STRING #####
-   version = "2.1.1"
+   version = "2.0.2"
    !##########################
 
    ! get number of arguments
