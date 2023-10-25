@@ -5,7 +5,7 @@ This is a Fortran script for setting up a ωB97X-3c calculation with ORCA5.0.3 o
 The use of the release binary [`o4wb3c`] is recommended. The binary has to be added to a location belonging to your `$PATH` variable.
 
 ### Building with Fortran package Manager
-You can use the Fortran Package Manager (https://github.com/fortran-lang/fpm) to build the project.
+You can use the Fortran Package Manager (https://github.com/fortran-lang/fpm) in version 0.9.0 or higher to build the project.
 To install the project in your prefered path, just use 
 ```
 fpm install -profile release -prefix [path]
