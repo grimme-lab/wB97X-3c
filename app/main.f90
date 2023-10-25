@@ -16,8 +16,8 @@ program main
 
    real(wp)         :: efield(3) = 0.0_wp
 
-   character(len=120)   :: atmp, guess, filen, bfilen, efilen
-   character(len=:), allocatable :: scfconv, version, outn 
+   character(len=120)   :: atmp
+   character(len=:), allocatable :: scfconv, version, outn, guess, filen, bfilen, efilen
    character(len=1)     :: ltmp
 
    logical              :: indguess, polar, beta, polgrad, dipgrad, geoopt, nocosx
