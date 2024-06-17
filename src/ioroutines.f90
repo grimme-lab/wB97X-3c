@@ -235,7 +235,7 @@ contains
       integer                                :: iat,imax,ltmp
       integer                                :: i,j,l,imin
 
-      integer(int_size), allocatable        :: sortindex(:)
+      integer(int_index), allocatable        :: sortindex(:)
 
       allocate(nbf(118),npr(118,20),angmom(118,20),ncore(118),lmax(118))
 

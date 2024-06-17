@@ -1,7 +1,7 @@
 module basistype
    use mctc_io
    use mctc_env
-   use stdlib_sorting, only: int_size
+   use stdlib_sorting, only: int_index
    implicit none
    private
 
@@ -24,7 +24,7 @@ module basistype
       integer, allocatable  :: lmax(:) ! total number of primitive functions
       integer, allocatable  :: nfactor(:,:,:) ! total number of primitive functions
       integer, allocatable  :: angmom(:,:) ! angular momentum of each primitive function
-      integer(int_size), allocatable :: sindex(:,:)
+      integer(int_index), allocatable :: sindex(:,:)
       real(wp), allocatable :: exp(:,:,:) ! exponent of each primitive function
       real(wp), allocatable :: coeff(:,:,:) ! contraction coefficient of each primitive function
    end type ecp_type
