@@ -10,7 +10,7 @@ contains
       write (*, '(a35,10x,a)') "--help", "# print this help"
       write (*, '(a35,10x,a)') "--struc <filename>", "# set structure file. DEFAULT 'coord'"
       write (*, '(a35,10x,a)') "--basisfile <filename>", "# set basis set file path. DEFAULT '~/.basis_vDZP'"
-      write (*, '(a35,10x,a)') "--easisfile <filename>", "# set ECP file path. DEFAULT '~/.ecp_vDZP'"
+      write (*, '(a35,10x,a)') "--ecpfile <filename>", "# set ECP file path. DEFAULT '~/.ecp_vDZP'"
       write (*, '(a35,10x,a)') "--chrg <int>", "# set charge"
       write (*, '(a35,10x,a)') "--uhf <int>", "# set number of unpaired electrons"
       write (*, '(a35,10x,a)') "--efield <x> <y> <z>", "# set electric field vector"
