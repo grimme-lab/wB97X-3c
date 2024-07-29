@@ -1,5 +1,5 @@
 > [!WARNING]  
-> ωB97X-3c is now natively available in `ORCA-6.0.0` (see [here](https://www.faccts.de/docs/orca/6.0/manual/) for details and download ORCA [here](https://orcaforum.kofo.mpg.de/app.php/dlext/?cat=23)).
+> ωB97X-3c is now natively available in `ORCA-6.0.0` (see [here](https://www.faccts.de/docs/orca/6.0/manual/contents/detailed/model.html#omegab97x-3c-a-composite-range-separated-hybrid-dft-method-with-a-molecule-optimized-polarized-valence-double-zeta-basis-set) for details and download ORCA [here](https://orcaforum.kofo.mpg.de/app.php/dlext/?cat=23)).
 > This program is therefore considered obsolete and **_should not be used_** anymore for standard purposes.
 
 
