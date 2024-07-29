@@ -1,4 +1,9 @@
-# ORCA4wB97X-3c
+> [!WARNING]  
+> ωB97X-3c is now natively available in `ORCA-6.0.0` (see [here](https://www.faccts.de/docs/orca/6.0/manual/) for details and download ORCA [here](https://orcaforum.kofo.mpg.de/app.php/dlext/?cat=23)).
+> This program is therefore considered obsolete and **_should not be used_** anymore for standard purposes.
+
+
+## ORCA for ωB97X-3c
 This is a Fortran script for setting up a ωB97X-3c calculation with ORCA5.0.3 or higher.
 
 ### Release version (recommended)
