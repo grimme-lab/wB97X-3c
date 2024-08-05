@@ -3,8 +3,30 @@
 > This program is therefore considered obsolete and **_should not be used_** anymore for standard purposes.
 
 
-## ORCA for ωB97X-3c
-This is a Fortran script for setting up a ωB97X-3c calculation with ORCA5.0.3 or higher.
+## ωB97X-3c for ORCA
+This is a Fortran script for setting up a ωB97X-3c calculation with `ORCA>=5.0.3`. When using the script or the original implementation, please cite the original [publication](https://pubs.aip.org/aip/jcp/article-abstract/158/1/014103/2867476/B97X-3c-A-composite-range-separated-hybrid-DFT):
+
+> M. Müller; A. Hansen; S. Grimme; _J. Chem. Phys._ **158**, 014103 (2023)
+
+```
+@article{muller_b97x-3c_2023,
+	title = {ω{B97X}-3c: {A} composite range-separated hybrid {DFT} method with a molecule-optimized polarized valence double- zeta basis set},
+	volume = {158},
+	issn = {10897690},
+	url = {https://aip.scitation.org/doi/abs/10.1063/5.0133026},
+	doi = {10.1063/5.0133026},
+	abstract = {A new composite density functional theory (DFT) method is presented. It is based on ωB97X-V as one of the best-performing density functionals for the GMTKN55 thermochemistry database and completes the family of "3c"methods toward range-separated hybrid DFT. This method is consistently available for all elements up to Rn (Z = 1-86). Its further key ingredients are a polarized valence double-ζ (vDZP) Gaussian basis set, which was fully optimized in molecular DFT calculations, in combination with large-core effective core potentials and a specially adapted D4 dispersion correction. Unlike most existing double-ζ atomic orbital sets, vDZP shows only small basis set superposition errors (BSSEs) and can compete with standard sets of triple-ζ quality. Small residual BSSE effects are efficiently absorbed by the D4 damping scheme, which overall eliminates the need for an explicit treatment or empirical corrections for BSSE. Thorough tests on a variety of thermochemistry benchmark sets show that the new composite method, dubbed ωB97X-3c, is on par with or even outperforms standard hybrid DFT methods in a quadruple-zeta basis set at a small fraction of the computational cost. Particular strengths of this method are the description of non-covalent interactions and barrier heights, for which it is among the best-performing density functionals overall.},
+	number = {1},
+	urldate = {2023-03-19},
+	journal = {Journal of Chemical Physics},
+	author = {Müller, Marcel and Hansen, Andreas and Grimme, Stefan},
+	month = jan,
+	year = {2023},
+	pmid = {36610980},
+	note = {Publisher: AIP Publishing LLCAIP Publishing},
+	pages = {014103},
+}
+```
 
 ### Release version (recommended)
 The use of the release binary [`o4wb3c`] is recommended. The binary has to be added to a location belonging to your `$PATH` variable.
