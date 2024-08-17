@@ -2,6 +2,10 @@
 > ωB97X-3c is now natively available in `ORCA-6.0.0` (see [here](https://www.faccts.de/docs/orca/6.0/manual/contents/detailed/model.html#omegab97x-3c-a-composite-range-separated-hybrid-dft-method-with-a-molecule-optimized-polarized-valence-double-zeta-basis-set) for details and download ORCA [here](https://orcaforum.kofo.mpg.de/app.php/dlext/?cat=23)).
 > This program is therefore considered obsolete and **_should not be used_** anymore for standard purposes.
 
+> [!TIP]
+> Interested in making the basis set available also for other codes and you need it in other formats? Look into [this repository](https://github.com/marcelmbn/ORCAbasissets) for a fairly simple Python script that can parse the files for [basis set](https://github.com/grimme-lab/ORCA4wB97X-3c/blob/main/vDZP_library/basis_vDZP_ORCA.txt) and [ECPs](https://github.com/grimme-lab/ORCA4wB97X-3c/blob/main/vDZP_library/ecp_vDZP_ORCA.txt) (see the different modes with `python main.py -h`).
+
+
 
 ## ωB97X-3c for ORCA
 This is a Fortran script for setting up a ωB97X-3c calculation with `ORCA>=5.0.3`. When using the script or the original implementation, please cite the original [publication](https://pubs.aip.org/aip/jcp/article-abstract/158/1/014103/2867476/B97X-3c-A-composite-range-separated-hybrid-DFT):
